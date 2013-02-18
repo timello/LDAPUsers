@@ -14,7 +14,7 @@ use parent qw(Bugzilla::Extension);
 our $VERSION = '0.01';
 
 use Bugzilla::Util qw(generate_random_password
-                      trick_taint);
+                      trick_taint clean_text);
 
 use Net::LDAP::Util qw(escape_filter_value);
 use Storable qw(dclone);
