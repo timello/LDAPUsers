@@ -23,8 +23,9 @@ use Storable qw(dclone);
 BEGIN {
     no warnings 'redefine';
     *Bugzilla::has_ldap_enabled = \&_bugzilla_has_ldap_enabled;
-    *Bugzilla::User::_orig_match_field = \&Bugzilla::User::match_field;
-    *Bugzilla::User::match_field = \&_user_match_field;
+    *Bugzilla::User::_ldapusers_orig_match_field
+        = \&Bugzilla::User::match_field;
+    *Bugzilla::User::match_field = \&_ldapusers_user_match_field;
 };
 
 sub _bugzilla_has_ldap_enabled {
@@ -32,7 +33,7 @@ sub _bugzilla_has_ldap_enabled {
     return Bugzilla->params->{user_verify_class} =~ /LDAP/ ? 1 : 0;
 }
 
-sub _user_match_field {
+sub _ldapusers_user_match_field {
     my ($fields, $data, $behavior) = @_;
 
     # We backup input_params because match_fields deletes
@@ -40,8 +41,9 @@ sub _user_match_field {
     my $input_params = dclone(Bugzilla->input_params);
 
     # We first try to match existent Bugzilla users.
-    my ($retval, $non_conclusive_fields) = Bugzilla::User::_orig_match_field(
-        $fields, $data, Bugzilla::User->MATCH_SKIP_CONFIRM);
+    my ($retval, $non_conclusive_fields)
+        = Bugzilla::User::_ldapusers_orig_match_field(
+            $fields, $data, Bugzilla::User->MATCH_SKIP_CONFIRM);
 
     #XXX
     foreach my $field (@{ $non_conclusive_fields || [] }) {
@@ -57,7 +59,7 @@ sub _user_match_field {
 
     # And finally, we call match_field again after possibly adding
     # new LDAP users.
-    return Bugzilla::User::_orig_match_field(@_);
+    return Bugzilla::User::_ldapusers_orig_match_field(@_);
 }
 
 sub _search_for_ldap_user_and_create {
