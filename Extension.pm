@@ -36,9 +36,14 @@ sub _bugzilla_has_ldap_enabled {
 sub _ldapusers_user_match_field {
     my ($fields, $data, $behavior) = @_;
 
-    # We backup input_params because match_fields deletes
-    # some fields.
-    my $input_params = dclone(Bugzilla->input_params);
+    # That means we are attaching something and a FileHandler is open
+    # and it is not serializable by dclone.
+    my $input_params = Bugzilla->input_params;
+    if (!exists Bugzilla->input_params->{'contenttypeselection'}) {  
+        # We backup input_params because match_fields deletes
+        # some fields.
+        $input_params = dclone(Bugzilla->input_params);
+    }
 
     # We first try to match existent Bugzilla users.
     my ($retval, $non_conclusive_fields)
