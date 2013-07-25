@@ -91,18 +91,44 @@ sub _search_for_ldap_user_and_create {
     }
 }
 
+sub _bind_ldap_for_search {
+    my $ldap = Bugzilla->ldap;
+    my $bind_result;
+    if (Bugzilla->params->{"LDAPbinddn"}) {
+        my ($LDAPbinddn,$LDAPbindpass) =
+            split(":",Bugzilla->params->{"LDAPbinddn"});
+        $bind_result =
+            $ldap->bind($LDAPbinddn, password => $LDAPbindpass);
+    }
+    else {
+        $bind_result = $ldap->bind();
+    }
+    ThrowCodeError("ldap_bind_failed", {errstr => $bind_result->error})
+        if $bind_result->code;
+}
+
 sub _create_ldap_user_if_exists {
     my ($username) = @_;
     my $ldap = Bugzilla->ldap;
+
+    _bind_ldap_for_search();
 
     $username = escape_filter_value($username);
 
     my $uid_attrib  = Bugzilla->params->{LDAPuidattribute};
     my $mail_attrib = Bugzilla->params->{LDAPmailattribute};
     my @attrs = ($uid_attrib, $mail_attrib, 'displayName', 'cn');
+
+    my $filter_attrib = '';
+    if ($uid_attrib ne $mail_attrib) {
+        $filter_attrib = $uid_attrib;
+    } else {
+        $filter_attrib = $mail_attrib;
+    }
+
     my $result = $ldap->search(( base => Bugzilla->params->{LDAPBaseDN},
                                  scope => 'sub',
-                                 filter => "$mail_attrib=$username" ),
+                                 filter => "$filter_attrib=$username" ),
                                attrs => \@attrs);
 
     ThrowCodeError('ldap_search_error',
