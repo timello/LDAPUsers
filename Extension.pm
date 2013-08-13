@@ -39,7 +39,9 @@ sub _ldapusers_user_match_field {
     # That means we are attaching something and a FileHandler is open
     # and it is not serializable by dclone.
     my $input_params = Bugzilla->input_params;
-    if (!exists Bugzilla->input_params->{'contenttypeselection'}) {  
+    if (!exists Bugzilla->input_params->{'contenttypeselection'}
+        and !exists Bugzilla->input_params->{'ispatch'})
+    {  
         # We backup input_params because match_fields deletes
         # some fields.
         $input_params = dclone(Bugzilla->input_params);
